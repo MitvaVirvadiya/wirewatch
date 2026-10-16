@@ -1,0 +1,27 @@
+{
+  "name": "wirewatch",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Finance-aware reliability monitoring for provider integrations. R&D lab — synthetic data only.",
+  "packageManager": "bun@1.2.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "scripts/*"
+  ],
+  "engines": { "bun": ">=1.2" },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "bun --filter @wirewatch/db run generate",
+    "db:migrate": "bun --filter @wirewatch/db run migrate",
+    "smoke": "bun scripts/smoke.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Bun = package manager + test runner (ADR-0006)
+      - uses: oven-sh/setup-bun@v2
+
+      # Node remains the runtime for the Next.js web build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run build
+      - run: bun run test
+
+  secrets-scan:
+    # Threat model: no secrets in repo, ever (D9)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build
+      - run: docker compose up -d
+      - name: smoke
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3001/health && curl -sf http://localhost:3002/health; then
+              echo "api+worker healthy"; exit 0
+            fi
+            sleep 2
+          done
+          echo "services failed to become healthy"; docker compose logs; exit 1
+      - run: docker compose down -v
+        if: always()

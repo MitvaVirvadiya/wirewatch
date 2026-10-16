@@ -1,0 +1,5 @@
+# ── RETIRED (ADR-0006, 2026-10-14) ─────────────────────────────────────
+# This project uses Bun workspaces, declared in the root package.json
+# "workspaces" field. pnpm is no longer part of the toolchain.
+# This file is kept (as a comment) only so old references fail loudly;
+# delete it whenever convenient.

@@ -1,0 +1,26 @@
+{
+  "name": "@wirewatch/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/server.ts",
+    "dev:worker": "bun run --watch src/worker.ts",
+    "start": "bun run src/server.ts",
+    "start:worker": "bun run src/worker.ts",
+    "build": "bun build src/server.ts src/worker.ts --outdir dist --target bun",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "elysia": "^1.2.10",
+    "ioredis": "^5.4.2",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@wirewatch/config": "workspace:*",
+    "bun-types": "^1.2.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+.next
+.turbo
+dist
+.env
+.env.local
+*.log
+.git
+.github
+docs
+research
+experiments
+project-memory
+backups

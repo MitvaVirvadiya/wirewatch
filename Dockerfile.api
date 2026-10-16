@@ -1,0 +1,23 @@
+# API + worker image (ADR-0002: one codebase, two processes — same image,
+# different CMD; ADR-0006: Bun is also the package manager).
+# Lab-grade: simple and reproducible beats slim. Optimizing is a Phase 9 exercise.
+FROM oven/bun:1 AS base
+WORKDIR /app
+
+# Copy manifests first for layer caching (run `bun install` locally first —
+# bun.lock must exist and be committed)
+COPY package.json bun.lock* turbo.json ./
+COPY packages/config/package.json packages/config/
+COPY apps/api/package.json apps/api/
+
+RUN bun install --ignore-scripts
+
+# Now the actual source
+COPY packages ./packages
+COPY apps/api ./apps/api
+
+ENV APP_ENV=local
+EXPOSE 3001 3002
+
+# Default: api server. Worker overrides with: bun run apps/api/src/worker.ts
+CMD ["bun", "run", "apps/api/src/server.ts"]
