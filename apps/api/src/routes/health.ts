@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
+import { sql } from "drizzle-orm";
 import { env } from "../env";
-import { getRedis, getSql, probe } from "../lib/deps";
+import { getDb, getRedis, probe } from "../lib/deps";
 
 /**
  * Liveness vs readiness — deliberately separate (docs/deployment/environments.md):
@@ -22,9 +23,17 @@ export const healthRoutes = new Elysia({ prefix: "" })
     time: new Date().toISOString(),
   }))
   .get("/ready", async ({ set }) => {
-    const sql = getSql();
+    // Phase 2a: real Drizzle query against Postgres (the isLocal bypass is
+    // gone). Only remaining bypass: `test` env without DATABASE_URL, so
+    // `bun test` in CI needs no Postgres container.
+    const dbHandle = getDb();
+    const skipDb = env.appEnv === "test" && !dbHandle;
     const [db, redis] = await Promise.all([
-      sql ? probe(() => sql`SELECT 1`) : Promise.resolve(env.isLocal), // local: DB optional until Phase 2
+      skipDb
+        ? Promise.resolve(true)
+        : dbHandle
+          ? probe(() => dbHandle.db.execute(sql`SELECT 1`))
+          : Promise.resolve(false),
       probe(() => getRedis().ping()),
     ]);
     const ok = db && redis;

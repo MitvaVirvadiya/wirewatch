@@ -1,6 +1,6 @@
 # HANDOFF.md — Read this first (future agents)
 
-**Snapshot date:** 2026-10-14 · **Phase:** 1 of 9 · **Overall state:** skeleton built, toolchain verified locally, no product code yet.
+**Snapshot date:** 2026-10-16 · **Phase:** 2a done (data layer) — next: 2b simulator/ingestion spike · **Overall state:** Phase 1 confirmed green locally (smoke 4/4); `@wirewatch/db` landed (schema+migrations+seed, tested-locally); git repo initialized; nothing deployed yet.
 
 ## 0. Mandatory read order (per `project-memory/coordination-protocol.md`)
 
@@ -41,39 +41,42 @@ pnpm is retired; Node exists only to run Next.js.
 | Item | Level |
 |---|---|
 | Docs/ADRs/protocol | documented |
-| Phase 1 code (api/worker/web shells, Docker, CI) | **implemented → tested-locally pending final smoke** |
-| `bun install`, `typecheck`, `test` | ✅ ran green on founder machine (one TS strictness bug in health.test.ts was found & fixed) |
-| docker compose smoke | 🟡 3/4 green; 4th was placeholder `.env` DATABASE_URL — `.env.example` fixed with working local defaults; **awaiting founder's final 4/4 confirmation** |
-| Anything deployed | ❌ nothing deployed yet |
+| Phase 1 code (api/worker/web shells, Docker, CI) | **tested-locally — confirmed 2026-10-16** (bun install/typecheck/test green; docker compose smoke **4/4**; all services healthy) |
+| Phase 2a `@wirewatch/db` (schema, migrations, seed, api wiring, real `/ready` db check) | **tested-locally** — see `status/tasks/TASK-123684e9.md` |
+| Anything deployed | ❌ nothing deployed yet (staging blocked on founder accounts) |
 
 ## 4. Environment gotchas (learned the hard way, now in `docs/deployment/local-setup.md`)
 
-- Agents in this setup may have **no shell** — create files, leave exact commands
-  for the human, never claim execution you didn't see.
+- Agents in this setup DO have shell now (verified 2026-10-16) — but still never claim execution you didn't see.
 - OrbStack must be running (`open -a OrbStack`) or every docker command fails on the socket.
 - **Bun auto-loads `.env` at process start; `--watch` does NOT re-read it** — restart after env edits.
 - `.env.example` local defaults must *work*, not be plausible placeholders (db=DOWN incident).
 - Commit `bun.lock`; CI uses `--frozen-lockfile`.
+- Bun workspace filter syntax is `bun run --filter @wirewatch/pkg script` (NOT `bun --filter pkg run script`).
+- **Dockerfile.api must COPY every workspace package manifest before `bun install`** — a new workspace dep breaks the build until its package.json is copied (pruned-workspace error).
+- Migrations are expand-only; `drizzle-kit generate` output is committed (`packages/db/drizzle/`).
 
-## 5. Immediate next task — Phase 2a: `@wirewatch/db`
+## 5. Immediate next task — Phase 2b: provider simulator + ingestion spike
 
 Claim by creating `project-memory/status/tasks/TASK-<id>.md` per protocol.
 
-Scope: `packages/db` — Drizzle schema + migrations for:
-`tenants, users/sessions/memberships (better-auth compatible), monitors,
-events (UNIQUE(monitor_id, provider_event_id) — the dedupe constraint),
-incidents (UNIQUE(fingerprint) — grouping upsert target),
-alerts (UNIQUE(incident_id) — alert-once), magic_links, audit_log`.
-See `docs/architecture/overview.md` "Data model sketch" — it's the contract.
+Scope: `scripts/simulator/` v1 — a synthetic provider that emits webhooks,
+heartbeat files, and poll responses (good + deliberately broken: late,
+schema-drift, duplicate, stale, partial). Then an ingestion endpoint spike:
+`POST /api/ingest/...` against the **seeded** dev tenant (`dev-financial`,
+3 monitors: `Daily NAV file drop` heartbeat, `Payments provider webhook`
+webhook, `FX rates poll` poll). Use `monitors.contract_schema`/`sanity` as
+the classification input; verify HMAC via `monitors.ingest_secret_hash`
+(hash per-monitor secret; `INGEST_HMAC_SECRET` env fallback). Dedupe:
+`INSERT ... ON CONFLICT (monitor_id, provider_event_id) DO NOTHING` on
+`events` — 202 either way. Simulator mounts ONLY behind
+`debugEndpointsAllowed()` (local/test).
 
-Rules: `tenant_id` on every tenant-owned table, FK + index; migrations are
-**expand-only**; `drizzle-kit generate` output committed; add a seed script for
-one dev tenant + 3 monitors. Wire `packages/db` into `apps/api/src/lib/deps.ts`
-(replacing the raw `postgres` client is fine) and make `/ready` db check real
-(remove the `isLocal` bypass once the package exists — keep bypass for `test`).
-
-Then Phase 2b: `scripts/simulator/` v1 + ingestion endpoint spike (dev tenant),
-then Phase 2c: better-auth wiring. Full gates in `STATUS.md`.
+Then Phase 2c: better-auth wiring — schema is already core-compatible
+(`user/session/account/verification` in `packages/db/src/schema/auth.ts`);
+decide custom `memberships` vs better-auth organization plugin (open
+question in `sessions/SESSION-2026-10-16-phase2a-db.md`). Full gates in
+`STATUS.md`.
 
 ## 6. Learning-workflow obligation (the whole point)
 

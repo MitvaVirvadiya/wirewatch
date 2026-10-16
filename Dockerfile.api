@@ -8,6 +8,7 @@ WORKDIR /app
 # bun.lock must exist and be committed)
 COPY package.json bun.lock* turbo.json ./
 COPY packages/config/package.json packages/config/
+COPY packages/db/package.json packages/db/
 COPY apps/api/package.json apps/api/
 
 RUN bun install --ignore-scripts
