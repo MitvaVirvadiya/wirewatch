@@ -20,6 +20,7 @@
     "db:migrate": "bun run --filter @wirewatch/db migrate",
     "db:seed": "bun run --filter @wirewatch/db seed",
     "db:studio": "bun run --filter @wirewatch/db studio",
+    "sim:run": "bun run --filter @wirewatch/simulator run",
     "smoke": "bun scripts/smoke.ts"
   },
   "devDependencies": {

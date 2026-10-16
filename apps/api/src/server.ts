@@ -2,13 +2,16 @@ import { Elysia } from "elysia";
 import { debugEndpointsAllowed, env } from "./env";
 import { shutdownDeps } from "./lib/deps";
 import { healthRoutes } from "./routes/health";
+import { ingestRoutes } from "./routes/ingest";
 
 const app = new Elysia()
   .use(healthRoutes)
+  // ── Signed ingestion (public, HMAC-verified — not session auth) ──────
+  .use(ingestRoutes)
   .get("/", () => ({
     service: "wirewatch-api",
     env: env.appEnv,
-    docs: "https://github.com/ — see finlab/docs/architecture/overview.md",
+    docs: "https://github.com/MitvaVirvadiya/wirewatch — see finlab/docs/architecture/overview.md",
   }))
   // ── Debug/seed/simulator routers mount here in later phases ──────────
   // Guard: if (!debugEndpointsAllowed()) they are NEVER mounted (threat model).

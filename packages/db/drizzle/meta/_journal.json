@@ -8,6 +8,13 @@
       "when": 1792161734454,
       "tag": "0000_unusual_madrox",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792162533549,
+      "tag": "0001_rapid_meltdown",
+      "breakpoints": true
     }
   ]
 }

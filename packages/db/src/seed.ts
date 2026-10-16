@@ -47,7 +47,7 @@ await db
       contractSchema: {
         requiredFields: ["nav_file_id", "as_of_date", "sha256", "row_count"],
       },
-      sanity: { maxAgeHours: 26, maxRowDeltaPct: 15 },
+      sanity: { maxAgeHours: 26, minRowCount: 100 },
     },
     {
       tenantId: tenant.id,

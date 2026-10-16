@@ -34,6 +34,7 @@ import { tenants } from "./tenancy";
 export const incidentStatusEnum = pgEnum("incident_status", [
   "open",
   "acknowledged",
+  "investigating",
   "resolved",
 ] as const);
 

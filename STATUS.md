@@ -13,14 +13,14 @@ Verification levels used below: `implemented | tested-locally | tested-in-deploy
 - [x] TASK-f01a2b3c Phase 1 toolchain (api+worker+web shells, Docker, CI) — **tested-locally confirmed 2026-10-16**: `bun install`/`typecheck`/`test` green, docker compose smoke **4/4 healthy**, `/ready` db+redis true
 - [x] ADR-0006: package manager switched pnpm → **Bun** (founder ruling 2026-10-14); Dockerfiles/CI/docs updated
 - [x] TASK-123684e9 Phase 2a `@wirewatch/db` (Drizzle schema, committed migrations, seed, api wiring, real `/ready` db check) — **tested-locally** — see `project-memory/status/tasks/TASK-123684e9.md`
+- [x] TASK-52a79ed9 Phase 2b simulator + signed ingestion (HMAC, dedupe, classification spike, incidents, alert-once) — **tested-locally** — see `project-memory/status/tasks/TASK-52a79ed9.md`
 
 ## In progress / Next (claim via protocol)
 
 | Order | Task file | Summary |
 |---|---|---|
-| 1 | `tasks/TASK-123684e9.md` | **review**: Phase 2a complete — founder review + commit pending |
-| 2 | *to be created* | Phase 2b: synthetic provider simulator v1 (`scripts/simulator/`) + ingestion endpoint spike against the seeded dev tenant (`dev-financial`, 3 monitors: heartbeat/webhook/poll) |
-| 3 | *to be created* | Phase 2c: better-auth invite-only wiring (ADR-0005) — **after simulator** (founder-approved order; schema is already better-auth-compatible) |
+| 1 | `tasks/TASK-52a79ed9.md` | **review**: Phase 2b complete — 37 tests green, full 6-mode demo verified against dockerized API |
+| 2 | `tasks/` (2c, to be created) | Phase 2c: better-auth invite-only wiring (ADR-0005) — open question to founder before start: custom `memberships` vs better-auth organization plugin; Google OAuth now or env-gated later; web login page scope |
 
 Note: accounts/env setup deferred by founder — develop local-first, `.env` filled later.
 
@@ -30,7 +30,7 @@ Note: accounts/env setup deferred by founder — develop local-first, `.env` fil
 |---|---|---|
 | 0 Discovery | Direction chosen, competitors documented, demand evidence recorded | ✅ passed (founder experience; formal interviews waived per D7) |
 | 1 Foundations | `bun dev` boots web+api+worker; Docker compose local; CI green; deploy pipeline to staging live | 🟡 local green (smoke 4/4 on 2026-10-16); staging deploy pending (accounts needed) |
-| 2 Vertical slice | Auth (invite-only) + tenants + one monitor type + synthetic provider demo, deployed | 🟡 started — 2a data layer done (`@wirewatch/db`, tested-locally) |
+| 2 Vertical slice | Auth (invite-only) + tenants + one monitor type + synthetic provider demo, deployed | 🟡 2a data layer + 2b simulator/ingestion done (`tested-locally`); 2c auth remaining; staging deploy pending (accounts needed) |
 | 3 Reliable ingestion | Idempotent webhook intake; `experiments/concurrency/` proves dedupe under concurrency | ⬜ |
 | 4 Background pipeline | Queues, retries, DLQ, classification, alert-once | ⬜ |
 | 5 Observability | Failure-injection suite green; dashboards; metrics defined | ⬜ |

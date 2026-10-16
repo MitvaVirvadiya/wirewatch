@@ -1,0 +1,7 @@
+{
+  "extends": "@wirewatch/config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun-types"]
+  },
+  "include": ["src"]
+}
