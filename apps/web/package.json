@@ -11,6 +11,7 @@
     "test": "echo 'web tests land in Phase 2' && exit 0"
   },
   "dependencies": {
+    "better-auth": "^1.7.10",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

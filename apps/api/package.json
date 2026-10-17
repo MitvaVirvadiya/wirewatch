@@ -11,10 +11,12 @@
     "build": "bun build src/server.ts src/worker.ts --outdir dist --target bun",
     "lint": "tsc --noEmit -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "seed:admin": "DATABASE_URL=${DATABASE_URL:-postgres://wirewatch:wirewatch@localhost:5432/wirewatch} BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-dev-better-auth-secret-local-only} bun run src/scripts/dev-admin.ts",
     "test": "DATABASE_URL=${DATABASE_URL:-postgres://wirewatch:wirewatch@localhost:5432/wirewatch} bun test"
   },
   "dependencies": {
     "@wirewatch/db": "workspace:*",
+    "better-auth": "^1.7.10",
     "drizzle-orm": "^0.45.4",
     "elysia": "^1.2.10",
     "ioredis": "^5.4.2"

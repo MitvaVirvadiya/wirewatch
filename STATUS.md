@@ -14,13 +14,14 @@ Verification levels used below: `implemented | tested-locally | tested-in-deploy
 - [x] ADR-0006: package manager switched pnpm → **Bun** (founder ruling 2026-10-14); Dockerfiles/CI/docs updated
 - [x] TASK-123684e9 Phase 2a `@wirewatch/db` (Drizzle schema, committed migrations, seed, api wiring, real `/ready` db check) — **tested-locally** — see `project-memory/status/tasks/TASK-123684e9.md`
 - [x] TASK-52a79ed9 Phase 2b simulator + signed ingestion (HMAC, dedupe, classification spike, incidents, alert-once) — **tested-locally** — see `project-memory/status/tasks/TASK-52a79ed9.md`
+- [x] TASK-c613e8ff Phase 2c better-auth invite-only (auth, invites, RBAC, session-scoped reads, web login+dashboard) — **tested-locally** — see `project-memory/status/tasks/TASK-c613e8ff.md`
 
 ## In progress / Next (claim via protocol)
 
 | Order | Task file | Summary |
 |---|---|---|
-| 1 | `tasks/TASK-52a79ed9.md` | **review**: Phase 2b complete — 37 tests green, full 6-mode demo verified against dockerized API |
-| 2 | `tasks/` (2c, to be created) | Phase 2c: better-auth invite-only wiring (ADR-0005) — open question to founder before start: custom `memberships` vs better-auth organization plugin; Google OAuth now or env-gated later; web login page scope |
+| 1 | `tasks/TASK-c613e8ff.md` | **review**: Phase 2c complete — Phase 2 (a+b+c) locally done; founder answers L08 checkpoint questions + creates accounts for staging deploy |
+| 2 | *to be created* | Phase 3: reliable ingestion — move the classification spike onto the queue/worker, idempotency-key design, per-monitor secret storage decision (2b open question), `experiments/concurrency/` dedupe-under-concurrency proof |
 
 Note: accounts/env setup deferred by founder — develop local-first, `.env` filled later.
 
@@ -30,7 +31,7 @@ Note: accounts/env setup deferred by founder — develop local-first, `.env` fil
 |---|---|---|
 | 0 Discovery | Direction chosen, competitors documented, demand evidence recorded | ✅ passed (founder experience; formal interviews waived per D7) |
 | 1 Foundations | `bun dev` boots web+api+worker; Docker compose local; CI green; deploy pipeline to staging live | 🟡 local green (smoke 4/4 on 2026-10-16); staging deploy pending (accounts needed) |
-| 2 Vertical slice | Auth (invite-only) + tenants + one monitor type + synthetic provider demo, deployed | 🟡 2a data layer + 2b simulator/ingestion done (`tested-locally`); 2c auth remaining; staging deploy pending (accounts needed) |
+| 2 Vertical slice | Auth (invite-only) + tenants + one monitor type + synthetic provider demo, deployed | 🟡 **local slice complete** (2a+2b+2c, tested-locally: 40 tests, e2e demo, web UI); remaining for gate: staging deploy (founder accounts) + Google OAuth credentials (optional) |
 | 3 Reliable ingestion | Idempotent webhook intake; `experiments/concurrency/` proves dedupe under concurrency | ⬜ |
 | 4 Background pipeline | Queues, retries, DLQ, classification, alert-once | ⬜ |
 | 5 Observability | Failure-injection suite green; dashboards; metrics defined | ⬜ |

@@ -55,6 +55,23 @@ survive buggy code, not just correct code.
 Writing the tenant_id rule as *tests* (not docs) is what makes it stick —
 the schema now refuses to lose its isolation invariants silently.
 
+## Implementation (Phase 2c addendum — auth landed 2026-10-17)
+
+better-auth (core + drizzle adapter + bearer plugin) on the shared db pool;
+**invite-only identity**: public sign-up blocked at the HTTP layer, accounts
+are created only by `POST /api/invites` (tenant owner/admin, audited), and
+the first account is bootstrapped by `seed:admin` (local only). Roles are
+enforced live: `membershipIn(tenantId, userId, [owner, admin])` gates every
+mutating tenant route. The cross-tenant attack became a **permanent
+integration test** (`apps/api/src/routes/auth.test.ts`: tenant-A member must
+NOT receive tenant-B monitors) — the threat-model control, executable.
+Session-scoped reads (`/api/me`, `/api/monitors`, `/api/incidents`) all pass
+through `visibleTenantIds()` — one helper, no route queries around it.
+
+Verification: 40 tests green incl. isolation + RBAC; e2e against the
+dockerized stack (sign-up 403 · invite 201 · viewer-invite 403). Full
+evidence: `project-memory/status/tasks/TASK-c613e8ff.md`.
+
 ## Learning checkpoint questions (answer before Phase 2 is "done")
 
 1. Why is `tenant_id` absent from `tenants` itself, and why is that NOT a
@@ -69,3 +86,15 @@ the schema now refuses to lose its isolation invariants silently.
    does it cost?
 5. If we enable RLS in Phase 9, which existing tests would catch a
    misconfigured policy on `events`, and which wouldn't?
+
+Phase 2c additions:
+
+6. A user belongs to tenants A and B — the dashboard currently mixes both
+   tenants' rows. When does that become a real problem (switcher? filter?
+   RLS makes it moot?), and which artifact should record the decision?
+7. Invite temp passwords are echoed in API responses in local/test only.
+   Walk through: what breaks if that gate (`env.isLocal`) is ever wrong in
+   production, and which layer would catch it?
+8. If a future route forgets `membershipIn()`, nothing fails — it is just
+   under-scoped. What guard catches this class of bug: a route template, a
+   lint rule, or RLS? What are you willing to build now vs defer?

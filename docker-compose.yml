@@ -36,6 +36,8 @@ services:
       DATABASE_URL: postgres://wirewatch:wirewatch@postgres:5432/wirewatch
       REDIS_URL: redis://redis:6379
       INGEST_HMAC_SECRET: dev-ingest-secret
+      BETTER_AUTH_URL: http://localhost:3001
+      BETTER_AUTH_SECRET: dev-better-auth-secret-local-only
     ports: ["3001:3001"]
     depends_on:
       postgres: { condition: service_healthy }

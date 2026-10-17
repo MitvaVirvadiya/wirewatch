@@ -30,8 +30,9 @@ export default async function Home() {
     <main style={{ maxWidth: 720, margin: "4rem auto", padding: "0 1rem" }}>
       <h1>🛰️ Wirewatch</h1>
       <p>
-        Finance-aware reliability monitoring for provider integrations.{" "}
-        <strong>Phase 1 skeleton</strong> — R&amp;D lab, synthetic data only.
+        Finance-aware reliability monitoring for provider integrations. R&amp;D
+        lab — synthetic data only. <a href="/login">Login</a> ·{" "}
+        <a href="/dashboard">Dashboard</a>
       </p>
 
       <h2>API connectivity</h2>
@@ -47,8 +48,8 @@ export default async function Home() {
       )}
 
       <p style={{ color: "#666" }}>
-        Next: Phase 2 — auth (invite-only), tenants, first monitor type, synthetic
-        provider simulator.
+        Auth (invite-only), tenants, monitors, signed ingestion and the
+        synthetic provider simulator landed in Phase 2 — see the dashboard.
       </p>
     </main>
   );

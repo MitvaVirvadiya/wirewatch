@@ -1,6 +1,6 @@
 # HANDOFF.md — Read this first (future agents)
 
-**Snapshot date:** 2026-10-16 · **Phase:** 2a done (data layer) — next: 2b simulator/ingestion spike · **Overall state:** Phase 1 confirmed green locally (smoke 4/4); `@wirewatch/db` landed (schema+migrations+seed, tested-locally); git repo initialized; nothing deployed yet.
+**Snapshot date:** 2026-10-17 · **Phase:** 2 COMPLETE locally (a+b+c) — next: Phase 3 reliable ingestion · **Overall state:** full local vertical slice running (auth, tenants, signed ingestion, classification→incidents→alerts, web dashboard), 40 tests green, e2e demo verified against the dockerized stack, pushed to github.com/MitvaVirvadiya/wirewatch. **Nothing deployed yet** (staging blocked on founder accounts).
 
 ## 0. Mandatory read order (per `project-memory/coordination-protocol.md`)
 
@@ -12,82 +12,115 @@
 
 ## 1. What this project is
 
-**Wirewatch** (name confirmed by founder): a finance-aware reliability monitor for
-fintech provider integrations — detects late files, schema drift, duplicate webhooks,
-stale data, partial deliveries. Multi-tenant SaaS, synthetic data ONLY, Stripe test
-mode ONLY. It is a learning vehicle for 5 capabilities (reliable ingestion, realtime
-collab, background pipelines, feature flags, multi-tenancy+billing) that must map to
-genuine product features — see `PROJECT_CONTEXT.md` mapping table.
+**Wirewatch**: a finance-aware reliability monitor for fintech provider
+integrations — detects late files, schema drift, duplicate webhooks, stale
+data, partial deliveries. Multi-tenant SaaS, synthetic data ONLY, Stripe
+test mode ONLY. Learning vehicle for 5 capabilities (reliable ingestion,
+realtime collab, background pipelines, feature flags, multi-tenancy+billing)
+mapped to genuine product features — see `PROJECT_CONTEXT.md`.
 
-Long-term: domain model is deliberately generic enough to absorb reconciliation
-(Direction 1) and ledger (Direction 3) features later. Don't break that.
+## 2. What exists and works NOW (all `tested-locally`, evidence in task files)
 
-## 2. Founder rulings (locked)
+- **Data layer** (`@wirewatch/db`): 13 tables, better-auth-compatible core,
+  Capability-A uniques (events dedupe / incidents fingerprint / alerts
+  incident_id), migrations 0000+0001 applied, `bun run db:seed` (1 tenant +
+  3 monitors), `bun run db:studio` (https://local.drizzle.studio).
+- **Auth** (`apps/api`, better-auth 1.7): invite-only — public sign-up 403
+  (HTTP-layer guard); `POST /api/invites` (owner/admin, audited, console
+  email adapter, temp password echoed local/test only); Google OAuth
+  env-gated (set GOOGLE_CLIENT_ID/SECRET to activate); sessions + bearer
+  plugin. First account bootstrap: `bun run --filter @wirewatch/api seed:admin`
+  → founder@wirewatch.dev / founder-dev-password (dev default).
+- **Signed ingestion** (`POST /api/ingest/:monitorId`): HMAC-SHA256 over raw
+  body (`x-wirewatch-signature`, constant-time), idempotency key header
+  (`x-provider-event-id`), `ON CONFLICT DO NOTHING` dedupe (202 either way,
+  duplicates audited), classification spike (schema_drift / stale_data /
+  late_file / partial_delivery), incident upsert (count+1), alert-once
+  (console adapter), evidence links.
+- **Simulator** (`bun run sim:run -- --mode clean|late|duplicate|drift|stale|partial`)
+  — the demo driver; signs with INGEST_HMAC_SECRET (dev-ingest-secret locally).
+- **Tenant-scoped reads**: `/api/me`, `/api/monitors`, `/api/incidents` —
+  membership-scoped (`visibleTenantIds`), CORS for the web origin.
+- **Web** (`apps/web`): `/login`, `/dashboard` (monitors + incidents),
+  `/` with health + nav.
+- **Stack**: `docker compose up --build -d` → postgres/redis/api/worker/web
+  healthy; `bun scripts/smoke.ts` → 4/4; root scripts: `dev build typecheck
+  test db:generate db:migrate db:seed db:studio sim:run smoke`.
 
-D1 Direction 2 (founder lived the problem) · D2 finlab lives inside saas-lab ·
-D3 managed deploy first (Vercel+Railway+Neon+Upstash), self-host VPS as Phase 9
-DevOps exercise · D4 modular monolith: one Elysia codebase, `server.ts` + `worker.ts`
-entrypoints · D5 Drizzle (not Prisma) · D6 better-auth: invite-only, Google +
-email/pass, multi-admin tenants, access+refresh tokens, scoped expiring magic links
-for status sharing · D7 interviews waived (founder experience = demand evidence) ·
-D8 spend cap $10/mo, alerts at $4 · D9 no real credentials/financial data ever ·
-D10 name = Wirewatch ✅
+## 3. Founder rulings (locked) + 2c defaults (REVIEWABLE)
 
-ADRs 0001–0006 in `docs/decisions/`. **0006: Bun is the package manager too** —
-pnpm is retired; Node exists only to run Next.js.
+D1–D10 + ADR-0001…0006 unchanged — see `docs/decisions/`. Phase 2c took
+three **recommended defaults after the founder question timed out**
+(documented in `sessions/SESSION-2026-10-16-phase2c-auth.md`):
+custom `memberships` (no org plugin) · Google env-gated · minimal web UI.
+Confirm or veto these when you next read this.
 
-## 3. Verification state (honest labels)
+## 4. Verification state (honest labels)
 
 | Item | Level |
 |---|---|
-| Docs/ADRs/protocol | documented |
-| Phase 1 code (api/worker/web shells, Docker, CI) | **tested-locally — confirmed 2026-10-16** (bun install/typecheck/test green; docker compose smoke **4/4**; all services healthy) |
-| Phase 2a `@wirewatch/db` (schema, migrations, seed, api wiring, real `/ready` db check) | **tested-locally** — see `status/tasks/TASK-123684e9.md` |
-| Anything deployed | ❌ nothing deployed yet (staging blocked on founder accounts) |
+| Phase 1 (toolchain, Docker, CI skeleton) | **tested-locally** (smoke 4/4) |
+| Phase 2a `@wirewatch/db` | **tested-locally** — `status/tasks/TASK-123684e9.md` |
+| Phase 2b simulator + ingestion | **tested-locally** — `status/tasks/TASK-52a79ed9.md` |
+| Phase 2c better-auth | **tested-locally** — `status/tasks/TASK-c613e8ff.md` |
+| Whole-workspace gate | `bun run typecheck` 4/4 · `bun run test` **40 pass / 0 fail / 0 skip** · e2e curl suite vs dockerized stack · smoke 4/4 |
+| Anything deployed | ❌ nothing (staging = founder accounts: Neon, Upstash, Railway, Vercel, Sentry, Stripe-test) |
 
-## 4. Environment gotchas (learned the hard way, now in `docs/deployment/local-setup.md`)
+## 5. Environment gotchas (learned the hard way — all proven live)
 
-- Agents in this setup DO have shell now (verified 2026-10-16) — but still never claim execution you didn't see.
-- OrbStack must be running (`open -a OrbStack`) or every docker command fails on the socket.
-- **Bun auto-loads `.env` at process start; `--watch` does NOT re-read it** — restart after env edits.
-- `.env.example` local defaults must *work*, not be plausible placeholders (db=DOWN incident).
-- Commit `bun.lock`; CI uses `--frozen-lockfile`.
-- Bun workspace filter syntax is `bun run --filter @wirewatch/pkg script` (NOT `bun --filter pkg run script`).
-- **Dockerfile.api must COPY every workspace package manifest before `bun install`** — a new workspace dep breaks the build until its package.json is copied (pruned-workspace error).
-- Migrations are expand-only; `drizzle-kit generate` output is committed (`packages/db/drizzle/`).
+- Bun auto-loads `.env` at process start; **turbo/test runs from a package
+  cwd do NOT see the root .env** → package `test`/`seed:admin` scripts
+  default `DATABASE_URL` inline (harmless; tests skip fast if no DB listens).
+- **Test files share module state in one `bun test` run** — never call
+  `shutdownDeps()` in a test file's `afterAll` (it ends the shared pool and
+  silently skips every later DB test file).
+- **One db pool**: better-auth's adapter uses the `getDb()` singleton —
+  a second `createDb()` anywhere = an unclosed pool = hanging scripts.
+- Bun filter syntax: `bun run --filter @wirewatch/pkg script`.
+- Dockerfile.api must COPY every workspace package manifest before install.
+- Docker build can fail transiently with macOS `Keychain Error -25320`
+  (headless cred helper) — plain `docker pull` clears it; fallback:
+  `DOCKER_CONFIG=$(mktemp -d) docker …`.
+- Elysia `set.headers` is HTTPHeaders — assign CORS via
+  `Object.assign(set.headers, corsHeaders())`.
+- `BETTER_AUTH_URL` = the API origin (:3001), NOT the web app.
+- Migrations are expand-only; `drizzle-kit generate` output committed.
+- Commits reference task IDs; repo = `github.com/MitvaVirvadiya/wirewatch` (SSH, main).
 
-## 5. Immediate next task — Phase 2b: provider simulator + ingestion spike
+## 6. Immediate next task — Phase 3: reliable ingestion (Capability A proper)
 
 Claim by creating `project-memory/status/tasks/TASK-<id>.md` per protocol.
+Scope (see `STATUS.md` gate + `docs/learning/L01/L02`):
 
-Scope: `scripts/simulator/` v1 — a synthetic provider that emits webhooks,
-heartbeat files, and poll responses (good + deliberately broken: late,
-schema-drift, duplicate, stale, partial). Then an ingestion endpoint spike:
-`POST /api/ingest/...` against the **seeded** dev tenant (`dev-financial`,
-3 monitors: `Daily NAV file drop` heartbeat, `Payments provider webhook`
-webhook, `FX rates poll` poll). Use `monitors.contract_schema`/`sanity` as
-the classification input; verify HMAC via `monitors.ingest_secret_hash`
-(hash per-monitor secret; `INGEST_HMAC_SECRET` env fallback). Dedupe:
-`INSERT ... ON CONFLICT (monitor_id, provider_event_id) DO NOTHING` on
-`events` — 202 either way. Simulator mounts ONLY behind
-`debugEndpointsAllowed()` (local/test).
+- Move the **classification spike off the request path** onto the
+  queue/worker (Phase 4 queues can start here or stay 4 — decide with founder).
+- Idempotency-key design write-up (`docs/learning/L01-idempotent-ingestion.md`).
+- **Per-monitor secret storage decision** (2b open question): HMAC can't be
+  verified against a one-way hash — either encrypted (reversible) per-monitor
+  secrets or shared/tenant secrets; needs founder input.
+- `experiments/concurrency/`: prove dedupe under concurrency (parallel
+  duplicate deliveries → exactly one event row; grouping upsert under races).
+- Stripe-style signature scheme (timestamp + scheme prefix) worth adopting
+  for replay hardening.
 
-Then Phase 2c: better-auth wiring — schema is already core-compatible
-(`user/session/account/verification` in `packages/db/src/schema/auth.ts`);
-decide custom `memberships` vs better-auth organization plugin (open
-question in `sessions/SESSION-2026-10-16-phase2a-db.md`). Full gates in
-`STATUS.md`.
+Before Phase 3 is "done": founder answers the L08 checkpoint questions
+(`docs/learning/L08-tenancy-and-billing.md`, 8 questions) — Phase 2 sign-off.
 
-## 6. Learning-workflow obligation (the whole point)
+## 7. Learning-workflow obligation (the whole point)
 
-Every substantial feature follows the 9-phase workflow (brief §12) and ends with
-a `docs/learning/L0x` note + checkpoint questions. Verification labels:
+Every substantial feature follows the 9-phase workflow and ends with a
+`docs/learning/L0x` note + checkpoint questions. Labels:
 `implemented → tested-locally → tested-in-deploy → verified-under-load`.
-Never inflate. If you couldn't run it, say so and say why.
+Never inflate. L08 (tenancy) is written; L01/L02 land with Phase 3.
 
-## 7. Open questions (don't resolve silently)
+## 8. Open questions (don't resolve silently)
 
-- OQ-01: Postgres RLS timing (currently Phase 9; app-layer scoping + tests until then)
-- OQ-02: magic-link single-use vs multi-use-until-expiry (current: multi-use, read-only, audited)
-- Domain/handle availability for "Wirewatch" — Phase 2 to-do before public demo
+- OQ-01 Postgres RLS timing (Phase 9) · OQ-02 magic-link single vs multi-use
+- 2c defaults (custom memberships / env-gated Google / minimal UI) — founder confirm/veto
+- Google OAuth: founder creates the OAuth app + sets GOOGLE_CLIENT_ID/SECRET
+- Per-monitor ingest secret storage (Phase 3, needs founder input)
+- Resend (or other) email adapter timing
+- CI: no Postgres service yet → integration tests skip in CI (compose smoke covers happy path)
+- Domain/handle availability for "Wirewatch" before public demo
 - Founder to fill `research/problem-validation/001-founder-context.md` (star story)
+- Founder accounts to create (staging deploy): Neon, Upstash, Railway, Vercel, Sentry, Stripe-test; spend alerts at $4, cap $10 (D8)

@@ -21,7 +21,7 @@ import {
   monitors,
   tenants,
 } from "@wirewatch/db";
-import { getDb, shutdownDeps } from "../lib/deps";
+import { getDb } from "../lib/deps";
 import { ingestRoutes } from "./ingest";
 
 process.env.INGEST_HMAC_SECRET ??= "test-ingest-secret";
@@ -106,7 +106,10 @@ afterAll(async () => {
   if (dbAvailable && dbHandle && tenantId) {
     await dbHandle.db.delete(tenants).where(eq(tenants.id, tenantId));
   }
-  await shutdownDeps();
+  // NOTE: no shutdownDeps() here — the sql pool is a process-wide singleton
+  // shared with other test files in the same `bun test` run; ending it here
+  // would make every later file's DB probe fail (learned the hard way —
+  // auth.test.ts silently skipped). The runner closes handles at exit.
 });
 
 // ── Helpers ─────────────────────────────────────────────────────────────

@@ -1,13 +1,21 @@
 import { Elysia } from "elysia";
 import { debugEndpointsAllowed, env } from "./env";
 import { shutdownDeps } from "./lib/deps";
+import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
 import { ingestRoutes } from "./routes/ingest";
+import { inviteRoutes } from "./routes/invites";
+import { scopedRoutes } from "./routes/scoped";
 
 const app = new Elysia()
   .use(healthRoutes)
   // ── Signed ingestion (public, HMAC-verified — not session auth) ──────
   .use(ingestRoutes)
+  // ── better-auth (ADR-0005): invite-only; sign-up blocked in the route ─
+  .use(authRoutes)
+  .use(inviteRoutes)
+  // ── Session-scoped tenant reads (dashboard; membership-isolated) ──────
+  .use(scopedRoutes)
   .get("/", () => ({
     service: "wirewatch-api",
     env: env.appEnv,
